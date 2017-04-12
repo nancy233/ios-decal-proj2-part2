@@ -52,6 +52,7 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
     */
     override func viewWillAppear(_ animated: Bool) {
         // YOUR CODE HERE
+        postTableView.reloadData()
     }
 
     override func didReceiveMemoryWarning() {
@@ -72,6 +73,7 @@ class PostsTableViewController: UIViewController, UITableViewDelegate, UITableVi
     */
     func updateData() {
         // YOUR CODE HERE
+        
     }
     
     // MARK: Custom methods (relating to UI)

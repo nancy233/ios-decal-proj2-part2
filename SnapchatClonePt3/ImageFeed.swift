@@ -61,6 +61,14 @@ func addPost(postImage: UIImage, thread: String, username: String) {
     let path = "\(firStorageImagesPath)/\(UUID().uuidString)"
     
     // YOUR CODE HERE
+    let myDateFormatter = DateFormatter()
+    myDateFormatter.dateFormat = dateFormat
+    let dict: [String:AnyObject] = [firImagePathNode: path as AnyObject,
+                                    firThreadNode: thread as AnyObject,
+                                    firUsernameNode: username as AnyObject,
+                                    firDateNode: myDateFormatter.string(from: Date()) as AnyObject]
+    dbRef.child(firPostsNode).childByAutoId().setValue(dict)
+    store(data: data, toPath: path)
 }
 
 /*
@@ -75,6 +83,12 @@ func store(data: Data, toPath path: String) {
     let storageRef = FIRStorage.storage().reference()
     
     // YOUR CODE HERE
+    storageRef.child(path).put(data, metadata:nil){(metadata, error) in
+        if let error = error{
+            print(error)
+        }
+        guard let metadata = metadata else{return}
+    }
 }
 
 
@@ -100,6 +114,38 @@ func getPosts(user: CurrentUser, completion: @escaping ([Post]?) -> Void) {
     var postArray: [Post] = []
     
     // YOUR CODE HERE
+    dbRef.child(firPostsNode).observeSingleEvent(of: .value, with: {snapshot in
+        if snapshot.exists(){
+            let allPosts = snapshot.value as! [String:AnyObject]
+            
+            dbRef.child(firUsersNode).child(user.id).child(firReadPostsNode).observeSingleEvent(of: .value,
+                                                                                                with: {snapshot in
+                if snapshot.exists(){
+                    let myReadPosts = snapshot.value as! [String:AnyObject]
+                    for key in allPosts.keys{
+                        //create new Post object
+                        let myUsername = allPosts[key]?[firUsernameNode] as! String
+                        let myPostImagePath = allPosts[key]?[firImagePathNode] as! String
+                        let myThread = allPosts[key]?[firThreadNode] as! String
+                        let myDateString = allPosts[key]?[firDateNode] as! String
+                        var myRead = false
+                        for readKey in myReadPosts.keys{
+                            if (myReadPosts[readKey] as! String==key){
+                                myRead = true
+                                break
+                            }
+                        }
+                        let newPost = Post(id: key, username: myUsername, postImagePath: myPostImagePath, thread: myThread, dateString: myDateString, read: myRead)
+                        postArray.append(newPost)
+                        
+                    }
+                completion(postArray)
+                }
+                
+            })
+        }else{completion(nil)}
+    })
+    
 }
 
 func getDataFromPath(path: String, completion: @escaping (Data?) -> Void) {
